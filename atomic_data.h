@@ -12,7 +12,7 @@ Alexandr Poltavsky
 
 
 #include <atomic>
-
+#include <thread>
 
 /*
 Template parameters:
@@ -45,20 +45,21 @@ struct atomic_data {
 
   //Read method:
   //  fn0 - a functor that accepts a pointer of type T0* (checked by SFINAE)
+  //  returns the result of the functor invocation
   template<typename U0>
-  auto read( U0 fn ) -> decltype( fn( (T0*) nullptr ), void ) {
+  auto read( U0 fn ) -> decltype( fn( (T0*) nullptr ) ) {
 
     while( no_reading.load() ) //a writer signals on hitting a sync barrier
-            std::this_thead::yield();
+            std::this_thread::yield();
 
     usage_counter_guard counter{}; //increment/decrement of usage_counter with RAII
 
-    fn( data.load() );
+    return fn( data.load() );
   }
 
   //Update
   template<typename U0>
-  auto update( U0 fn ) -> decltype( fn( (T0*) nullptr ), void ) {
+  auto update( U0 fn ) -> decltype( fn( (T0*) nullptr ), (void) 0 ) {
 
     sync(); //checking for the sync barrier
 
@@ -71,7 +72,7 @@ struct atomic_data {
 
     do { //CAS loop
 
-      auto current_data = data.load( std::memory_order_aquire ); //aquire
+      auto current_data = data.load( std::memory_order_acquire ); //aquire
 
       *queue[idx] = *current_data; //copy
 
@@ -95,10 +96,8 @@ struct atomic_data {
   //Logic for the synchronization barrier
   void sync() {
 
-    auto = left.load();
-
     //check if it's time for the sync
-    if( left % queue_size == 0 ) {
+    if( left.load() % queue_size == 0 ) {
       
       no_reading.store(1); //signal to readers
 
@@ -114,13 +113,16 @@ struct atomic_data {
 
 
   //Helper class to wrap std::atomic with relaxed loads and stores
-  template<typename T0>
+  template<typename U0>
   class atomic {
-    std::atomic<T0> data;
-    T0 add( T0 value, std::memory_order order = std::memory_order_relaxed ) { return data.fetch_add( value, order ); }
-    T0 sub( T0 value, std::memory_order order = std::memory_order_relaxed ) { return data.fetch_sub( value, order ); }
-    void store( T0 value, std::memory_order order = std::memory_order_relaxed ) { data.store( value, order ); }
-    T0 load( std::memory_order order = std::memory_order_relaxed ) { return data.load( order ); }
+
+    U0 add( U0 value, std::memory_order order = std::memory_order_relaxed ) { return data.fetch_add( value, order ); }
+    U0 sub( U0 value, std::memory_order order = std::memory_order_relaxed ) { return data.fetch_sub( value, order ); }
+
+    void store( U0 value, std::memory_order order = std::memory_order_relaxed ) { data.store( value, order ); }
+    U0 load( std::memory_order order = std::memory_order_relaxed ) { return data.load( order ); }
+
+    std::atomic<U0> data;
   };
 
   //RAII for usage_counter
@@ -136,9 +138,6 @@ struct atomic_data {
   //note array_size=2*N0: we use double the size to avoid having to zero out cells
   //also not atomic because sync barrier and aquire/release help to avoid races
   static T0* queue[ array_size ]; 
-
-  //preallocated elements (instead of dynamic allocation)
-  static T0  queue_elements[N0];
 
   //pointer to actual data
   atomic<T0*> data{};
@@ -156,13 +155,10 @@ struct atomic_data {
 
 };
 
-
-template<typename T0, size_t N0> T0* atomic_data<T0,N0>::queue[array_size]{}
-template<typename T0, size_t N0> T0  atomic_data<T0,N0>::queue_elements[queue_size]{};
-
-template<typename T0, size_t N0> atomic<int> atomic_data<T0,N0>::left{};
-template<typename T0, size_t N0> atomic<int> atomic_data<T0,N0>::right{queue_size};
-template<typename T0, size_t N0> atomic<int> atomic_data<T0,N0>::usage_counter{};
-template<typename T0, size_t N0> atomic<int> atomic_data<T0,N0>::no_reading{};
+template<typename T0, unsigned N0> T0* atomic_data<T0,N0>::queue[array_size]{};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::left{};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::right{queue_size};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::usage_counter{};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::no_reading{};
 
 
