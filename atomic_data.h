@@ -37,10 +37,16 @@ struct atomic_data {
     std::atomic_thread_fence( std::memory_order_release );
   }
 
+
   ~atomic_data() {
+
+    //wait for threads to finish
+    while( usage_counter.load() != 0 )
+            std::this_thread::yield();
+
     //not exception safe, be accurate
     delete data.load();
-    for( unsigned i = 0; i < queue_size; i++ ) delete queue[i];
+    for( unsigned i = left.load(); i < queue_size; i++ ) delete queue[i];
   }
 
   //Read method:
@@ -78,7 +84,7 @@ struct atomic_data {
 
       fn( queue[idx] ); //update
 
-    } while( data.compare_exchange_weak( current_data, queue[idx], std::memory_order_release ) );
+    } while( ! data.compare_exchange_weak( current_data, queue[idx], std::memory_order_release ) );
 
     //return current element to the queue
     idx = right.add(1) % array_size;
@@ -92,21 +98,21 @@ struct atomic_data {
     //~usage_counter_guard()
   }
 
-  
+
   //Logic for the synchronization barrier
   void sync() {
 
     //check if it's time for the sync
     if( left.load() % queue_size == 0 ) {
-      
+
       no_reading.store(1); //signal to readers
 
       //it might seem that there is a race between no_reading and usage_counter
       //but no_reading is just a benign signal, usage_counter is most important
-      
+
       while( usage_counter.load() != 0 )
               std::this_thread::yield();
-   
+
       no_reading.store(0);
     }
   }
@@ -114,7 +120,7 @@ struct atomic_data {
 
   //Helper class to wrap std::atomic with relaxed loads and stores
   template<typename U0>
-  class atomic {
+  struct atomic {
 
     U0 add( U0 value, std::memory_order order = std::memory_order_relaxed ) { return data.fetch_add( value, order ); }
     U0 sub( U0 value, std::memory_order order = std::memory_order_relaxed ) { return data.fetch_sub( value, order ); }
@@ -122,11 +128,15 @@ struct atomic_data {
     void store( U0 value, std::memory_order order = std::memory_order_relaxed ) { data.store( value, order ); }
     U0 load( std::memory_order order = std::memory_order_relaxed ) { return data.load( order ); }
 
+    bool compare_exchange_weak( U0& expected, U0 desired, std::memory_order order = std::memory_order_seq_cst ) {
+      return data.compare_exchange_weak( expected, desired, order );
+    }
+
     std::atomic<U0> data;
   };
 
   //RAII for usage_counter
-  class usage_counter_guard {
+  struct usage_counter_guard {
      usage_counter_guard() { usage_counter.add(1); }
     ~usage_counter_guard() { usage_counter.sub(1); }
   };
