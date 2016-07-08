@@ -1,4 +1,3 @@
-
 /*
 atomic_data: A Multibyte General Purpose Lock-Free Data Structure
 
@@ -7,12 +6,14 @@ Blog post: http://alexpolt.github.io/atomic-data.html
 Alexandr Poltavsky
 */
 
-
-#pragma once
-
+#include <cstdio>
 
 #include <atomic>
 #include <thread>
+#include <chrono>
+
+using namespace std::chrono_literals;
+
 
 /*
 Template parameters:
@@ -20,9 +21,8 @@ Template parameters:
   N0 - size of the queue
 */
 
-template<typename T0, unsigned N0> 
+template<typename T0, unsigned N0>
 struct atomic_data {
-
 
   //Default Constructor:
   //  object - initial current data, gets deleted in ~atomic_data
@@ -37,12 +37,9 @@ struct atomic_data {
     std::atomic_thread_fence( std::memory_order_release );
   }
 
-
   ~atomic_data() {
-
-    //wait for threads to finish
-    while( usage_counter.load() != 0 )
-            std::this_thread::yield();
+    while( counter_usage.load() != 0 )
+            std::this_thread::sleep_for(1ms);
 
     //not exception safe, be accurate
     delete data.load();
@@ -58,7 +55,7 @@ struct atomic_data {
     while( no_reading.load() ) //a writer signals on hitting a sync barrier
             std::this_thread::yield();
 
-    usage_counter_guard counter{}; //increment/decrement of usage_counter with RAII
+    counter_guard counter{counter_usage}; //increment/decrement of counter_usage with RAII
 
     return fn( data.load() );
   }
@@ -66,57 +63,78 @@ struct atomic_data {
   //Update
   template<typename U0>
   auto update( U0 fn ) -> decltype( fn( (T0*) nullptr ), (void) 0 ) {
+    while( ! update_weak( fn ) );
+  }
 
-    sync(); //checking for the sync barrier
+  //Update weak
+  template<typename U0>
+  bool update_weak( U0 fn ) {
 
-    usage_counter_guard counter{};
+    auto left_old = left.load();
+
+    if( ! sync( left_old ) ) return false; //checking for the sync barrier
+
+    if( left_old == right.load() ) return false; //queue is empty
+
+    counter_guard counter{counter_usage};
 
     //allocate an element from the queue
-    auto idx = left.add(1) % array_size;
+    if( ! left.compare_exchange_weak( left_old, left_old+1, std::memory_order_relaxed ) ) return false;
 
-    T0* current_data = nullptr;
+    //update loop
+    T0 *data_old = data.load(), *data_new = queue[left_old % array_size];
+    do {
 
-    do { //CAS loop
+      std::atomic_thread_fence( std::memory_order_acquire );
 
-      auto current_data = data.load( std::memory_order_acquire ); //aquire
+      *data_new = *data_old; //copy
 
-      *queue[idx] = *current_data; //copy
+      fn( data_new ); //update
 
-      fn( queue[idx] ); //update
+      std::atomic_thread_fence( std::memory_order_release );
 
-    } while( ! data.compare_exchange_weak( current_data, queue[idx], std::memory_order_release ) );
+    } while( ! data.compare_exchange_weak( data_old, data_new, std::memory_order_relaxed ) );
 
     //return current element to the queue
-    idx = right.add(1) % array_size;
-    queue[idx] = current_data;
+    auto idx = right.add(1) % array_size;
+
+    queue[idx] = data_old;
 
     //if that was the last store for the queue to become full - issue a fence,
     //so that threads can use elements again after the sync barrier
     if( idx % queue_size == 0 )
         std::atomic_thread_fence( std::memory_order_release );
 
-    //~usage_counter_guard()
+    return true;
+    //~counter_guard()
   }
 
-
+  
   //Logic for the synchronization barrier
-  void sync() {
+  bool sync(int left) {
 
     //check if it's time for the sync
-    if( left.load() % queue_size == 0 ) {
+    if( left % queue_size == 0 ) {
 
-      no_reading.store(1); //signal to readers
+      counter_guard counter{no_reading}; //signal to readers
 
-      //it might seem that there is a race between no_reading and usage_counter
-      //but no_reading is just a benign signal, usage_counter is most important
+      //it might seem that there is a race between no_reading and counter_usage
+      //but no_reading is just a benign signal, counter_usage is most important
+      
+      if( counter_usage.load() == 0 ) return true;
 
-      while( usage_counter.load() != 0 )
-              std::this_thread::yield();
+      counter_sync.add(1); //for stats
 
-      no_reading.store(0);
+      std::this_thread::sleep_for(1ms);   
+
+      return false;
     }
+
+    return true;
   }
 
+	//call to get the number of wait events at the sync barrier
+  int sync_stat() { return counter_sync.load(); }
 
   //Helper class to wrap std::atomic with relaxed loads and stores
   template<typename U0>
@@ -127,18 +145,19 @@ struct atomic_data {
 
     void store( U0 value, std::memory_order order = std::memory_order_relaxed ) { data.store( value, order ); }
     U0 load( std::memory_order order = std::memory_order_relaxed ) { return data.load( order ); }
-
-    bool compare_exchange_weak( U0& expected, U0 desired, std::memory_order order = std::memory_order_seq_cst ) {
-      return data.compare_exchange_weak( expected, desired, order );
-    }
-
+    
+	bool compare_exchange_weak( U0& expected, U0 desired, std::memory_order order = std::memory_order_seq_cst ) {
+		return data.compare_exchange_weak( expected, desired, order );
+	}
+	
     std::atomic<U0> data;
   };
 
-  //RAII for usage_counter
-  struct usage_counter_guard {
-     usage_counter_guard() { usage_counter.add(1); }
-    ~usage_counter_guard() { usage_counter.sub(1); }
+  //RAII for counter_usage
+  struct  counter_guard {
+     counter_guard( atomic<int>& counter_ ) : counter{counter_} { counter.add(1); }
+    ~counter_guard() { counter.sub(1); }
+    atomic<int>& counter;
   };
 
 
@@ -158,7 +177,10 @@ struct atomic_data {
   static atomic<int> right;
 
   //usage counter is used upon reaching synchronization barrier
-  static atomic<int> usage_counter;
+  static atomic<int> counter_usage;
+
+  //for statistics
+  static atomic<int> counter_sync;
 
   //a singnal to readers used during sync
   static atomic<int> no_reading;
@@ -167,8 +189,8 @@ struct atomic_data {
 
 template<typename T0, unsigned N0> T0* atomic_data<T0,N0>::queue[array_size]{};
 template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::left{};
-template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::right{queue_size};
-template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::usage_counter{};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::right{{queue_size}};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::counter_usage{};
+template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::counter_sync{};
 template<typename T0, unsigned N0> atomic_data<T0,N0>::atomic<int> atomic_data<T0,N0>::no_reading{};
-
 
