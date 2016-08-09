@@ -97,10 +97,12 @@ template< typename T0, unsigned N0 > struct atomic_list {
 
     bool operator==( iterator const& other ) const { return value == other.value; }
     bool operator!=( iterator const& other ) const { return !operator==( other ); }
-    operator bool() { return (bool)value; }
+    operator bool() const { return (bool) value; }
 
-    atomic_node& operator*() const { return *value; }
-    atomic_node* operator->() const { return &*value; }
+    atomic_node& operator*() { return *value; }
+    atomic_node const& operator*() const { return *value; }
+    atomic_node* operator->() { return &*value; }
+    atomic_node const* operator->() const { return &*value; }
 
     node_ptr value;
   };
@@ -111,20 +113,25 @@ template< typename T0, unsigned N0 > struct atomic_list {
 
 
   iterator insert( T0 value ) {
-    return insert_weak( {list}, (T0&&) value );
+    auto it = begin();
+    return insert_weak( it, (T0&&) value );
   }
 
-  iterator insert_weak( iterator pos, T0 value ) {
+  iterator insert_weak( iterator& pos, T0 value ) {
 
     node_ptr node_new{ new atomic_node{ new node{ false, value, nullptr } }  };
 
+    //atomic_data->update_weak because the node at pos might be locked
     bool r = pos->update_weak( [ &node_new ]( node* node0 ) {
 
+      //if locked get out
       if( node0->lock ) return false;
 
+      //perform insertion
       (*node_new)->next = node0->next;
       node0->next = node_new;
 
+      //okay for update
       return true;
 
     } );
@@ -133,13 +140,16 @@ template< typename T0, unsigned N0 > struct atomic_list {
   }
 
   iterator remove_weak() {
-    return remove_weak( {list} );
+    auto it = begin();
+    return remove_weak( it );
   }
 
-  iterator remove_weak( iterator pos ) {
+  iterator remove_weak( iterator& pos ) {
 
     node_ptr node_next{};
 
+    //using update_weak on the node before one that we want to remove
+    //update_weak is reentrant
     bool r = pos->update_weak( [&pos,&node_next]( node* node0 ) {
 
       if( node0->lock ) return false;
@@ -149,7 +159,8 @@ template< typename T0, unsigned N0 > struct atomic_list {
       if( ! node_next ) {
         return false;
       }
-
+      
+      //try to lock the to be deleted node
       bool r = node_next->update_weak( []( node* node0 ) {
         if( node0->lock ) return false;
         node0->lock = true;
@@ -161,14 +172,17 @@ template< typename T0, unsigned N0 > struct atomic_list {
         return false;
       }
 
+      //delete
       node0->next = (*node_next)->next;
 
+      //signal atomic_data that we're good to go
       return true;
 
     });
 
 
     if( ! r ) {
+      //unlock if we locked and still failed to update
       if( node_next ) 
         (*node_next)->lock = false;
       return {};
@@ -183,8 +197,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
   size_t size() {
     size_t count = 0;
     for( auto& n : *this ) {
-      (void)n;
-      count++;
+      (void)n; count++;
     }
     //minus one for the head
     return count-1;
