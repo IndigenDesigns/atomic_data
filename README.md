@@ -12,7 +12,7 @@
     Most samples also make a run using a bare std::mutex (*atomic\_data\_mutex*) for 
     performance comparison.
 
-  * [Vistual Studio 2015](https://github.com/alexpolt/atomic_data/tree/master/VisualStudio2015/atomic_data_test)
+  * [Visual Studio 2015](https://github.com/alexpolt/atomic_data/tree/master/VisualStudio2015/atomic_data_test)
     project with above samples.
 
   * [Android Studio](https://github.com/alexpolt/atomic_data/tree/master/AndroidStudio/atomic_data_test) 
