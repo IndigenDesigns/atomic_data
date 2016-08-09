@@ -3,18 +3,20 @@
 
   This repo contains three folders:
 
-  * In [Samples](https://github.com/alexpolt/atomic_data/Samples/) you'll find **atomic\_data** samples such as
-  a concurrent linked list with insertion/removal at any point, a std::vector of 
-  **atomic\_data** and a **atomic\_data** of std::vector and the one, that was
-  helpful in testing memory barriers on ARM - **atomic\_data** wrapping an array 
-  and threads incrementing the minimum value in the array. 
-  Most samples also make a run using a bare std::mutex (*atomic\_data\_mutex*) for 
-  performance comparison.
+  * In [Samples](https://github.com/alexpolt/atomic_data/tree/master/samples) 
+    you'll find **atomic\_data** samples such as
+    a concurrent linked list with insertion/removal at any point, a std::vector of 
+    **atomic\_data** and a **atomic\_data** of std::vector and the one, that was
+    helpful in testing memory barriers on ARM - **atomic\_data** wrapping an array 
+    and threads incrementing the minimum value in the array. 
+    Most samples also make a run using a bare std::mutex (*atomic\_data\_mutex*) for 
+    performance comparison.
 
-  * [Vistual Studio 2015](https://github.com/alexpolt/atomic_data/VisualStudio2015/) project with above samples.
+  * [Vistual Studio 2015](https://github.com/alexpolt/atomic_data/tree/master/VisualStudio2015/atomic_data_test)
+    project with above samples.
 
-  * [Android Studio](https://github.com/alexpolt/atomic_data/AndroidStudio/) NDK project to test **atomic\_data** on 
-  a smartphone.
+  * [Android Studio](https://github.com/alexpolt/atomic_data/tree/master/AndroidStudio/atomic_data_test) 
+    NDK project to test **atomic\_data** on a smartphone.
 
 
 ###A diagram depicting the basics of the algorithm behind **atomic\_data**:
