@@ -17,7 +17,7 @@
   a smartphone.
 
 
-##A diagram depicting the basics of the algorithm behind **atomic\_data**:
+###A diagram depicting the basics of the algorithm behind **atomic\_data**:
 
   ![diagram](http://alexpolt.github.io/images/atomic-data.png)
 
