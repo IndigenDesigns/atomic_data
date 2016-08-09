@@ -3,7 +3,7 @@
 
   This repo contains three folders:
 
-  * In [Samples](Samples/) you'll find **atomic\_data** samples such as
+  * In [Samples](atomic_data/Samples/) you'll find **atomic\_data** samples such as
   a concurrent linked list with insertion/removal at any point, a std::vector of 
   **atomic\_data** and a **atomic\_data** of std::vector and the one, that was
   helpful in testing memory barriers on ARM - **atomic\_data** wrapping an array 
@@ -11,9 +11,9 @@
   Most samples also make a run using a bare std::mutex (*atomic\_data\_mutex*) for 
   performance comparison.
 
-  * [Vistual Studio 2015](VisualStudio2015/) project with above samples.
+  * [Vistual Studio 2015](atomic_data/VisualStudio2015/) project with above samples.
 
-  * [Android Studio](AndroidStudio/) NDK project to test **atomic\_data** on 
+  * [Android Studio](atomic_data/AndroidStudio/) NDK project to test **atomic\_data** on 
   a smartphone.
 
 
