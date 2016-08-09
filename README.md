@@ -18,6 +18,8 @@
   * [Android Studio](https://github.com/alexpolt/atomic_data/tree/master/AndroidStudio/atomic_data_test) 
     NDK project to test **atomic\_data** on a smartphone.
 
+  You can download the entire repo as a zip archive or clone it.
+
 
 ###A diagram depicting the basics of the algorithm behind **atomic\_data**:
 
@@ -31,4 +33,5 @@
   The code in this repository is Public-domain software.
 
   ![Pubic domain software](http://alexpolt.github.io/images/public_domain_mark.png)
+
 
