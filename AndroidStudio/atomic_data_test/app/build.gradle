@@ -1,0 +1,64 @@
+apply plugin: 'com.android.model.application'
+
+model {
+    android {
+        compileSdkVersion = 19
+        buildToolsVersion = "23.0.3"
+
+        defaultConfig {
+            applicationId = 'com.example.atomic_data'
+            minSdkVersion.apiLevel = 8
+            targetSdkVersion.apiLevel = 19
+        }
+        /*
+         * native build settings: taking default for almost everything
+         */
+        ndk {
+            moduleName = 'atomic_data_test'
+            toolchain = 'clang'
+            stl = 'gnustl_static'
+            cppFlags.addAll(['-Wall','-std=c++14','-O2','-fexceptions'])
+            ldLibs.addAll(['atomic','log'])
+        }
+        buildTypes {
+            release {
+                minifyEnabled = false
+                proguardFiles.add(file('proguard-rules.txt'))
+            }
+        }
+        productFlavors {
+            // for detailed abiFilter descriptions, refer to "Supported ABIs" @
+            // https://developer.android.com/ndk/guides/abis.html#sa
+            create("arm") {
+                ndk.abiFilters.add("armeabi")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_ARM'])
+            }
+            create("arm7") {
+                ndk.abiFilters.add("armeabi-v7a")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_ARM'])
+            }
+            create("arm8") {
+                ndk.abiFilters.add("arm64-v8a")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_ARM'])
+            }
+            create("x86") {
+                ndk.abiFilters.add("x86")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_X86'])
+            }
+            create("x86-64") {
+                ndk.abiFilters.add("x86_64")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_X86'])
+            }
+            create("mips") {
+                ndk.abiFilters.add("mips")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_MIPS'])
+            }
+            create("mips-64") {
+                ndk.abiFilters.add("mips64")
+                ndk.cppFlags.addAll(['-DATOMIC_DATA_MIPS'])
+            }
+            // To include all cpu architectures, leaves abiFilters empty
+            create("all")
+        }
+    }
+}
