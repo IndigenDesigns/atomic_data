@@ -27,7 +27,7 @@ Alexandr Poltavsky
 using uint = unsigned;
 const uint threads_size = 8;
 const uint iterations = 8192;
-const uint list_size = 17;
+const uint list_size = 15;
 
 
 int main() {
@@ -48,7 +48,9 @@ int main() {
   //populate the list with list_size members
   //after test insertions/removals we will check that the size is still list_size
   for( uint i = 0; i < list_size; i++ ) {
-    atomic_list_t::iterator it = atomic_list0.insert_weak( i );
+    atomic_list_t::iterator it = atomic_list0.insert( i );
+    //test lock a node to see the effect of locking
+    //it should remain in the list forever
     if( i == 3 ) (*it)->lock = true;
   }
 
@@ -140,7 +142,6 @@ int main() {
 
   printf( "= *%d* elements\n\n", atomic_list0.size() );
 
-  printf( "\npress enter\n" );
-  getchar();
+  printf( "done\n" );
 
 }

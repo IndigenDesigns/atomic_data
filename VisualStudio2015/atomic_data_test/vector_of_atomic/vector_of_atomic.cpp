@@ -72,8 +72,7 @@ int main() {
 
   for( auto i : vector0 ) printf( "%u ", *i );
 
-  printf( "\npress enter\n" );
-  getchar();
+  printf( "\ndone\n" );
 
 
 }

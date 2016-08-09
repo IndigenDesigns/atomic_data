@@ -1,3 +1,5 @@
+#pragma once
+
 /*
 
 A linked list using atomic_data. This header is part of a test in atomic_list.cpp file.
@@ -11,6 +13,14 @@ to it or remove it from the list, because it's going to have the lock member var
 
 API:
 
+types:
+
+  - iterator
+  holds a shared_ptr to an atomic_data<node>, can be stored and passed around
+  accesing node data: auto data = it->read( []( node* ) { ... return node->data; } ) 
+  updating node data: it->update( []( node* ) { ... return true; } ) 
+  or in a single-threaded case: (*it)->member_of_node
+
 create instance:
 
     - atomic_list< data_type, queue_length >
@@ -19,18 +29,22 @@ create instance:
 methods:
 
   - iterator insert_weak( iterator it, value )
-  - iterator insert_weak( value ) //calls insert_weak with this->begin() for iterator
-  inserts a node after it and return an iterator to it
+  inserts a node after it and returns an iterator to it
   on fail (if the node at it position is locked) returns back an empty iterator that converts to false
   you should implement your strategy for this case (you might call it in a loop and yield on failure)
 
+  - iterator insert( value ) 
+  calls insert_weak with this->begin() for iterator, never fails, returns an iterator to inserted element
 
   - iterator remove_weak( iterator it, value )
-  - iterator remove_weak( value ) //calls remove_weak with this->begin() for iterator
   removes a node after it and returns an iterator poiting to it
   to do it it sets a lock variable to true (with the help of atomic_data)
   so all removed nodes have their lock variable set to true and can't be 
   erroneously used for insertion or removal and you can safely store the returned
+  iterator
+
+  - iterator remove_weak( value )
+  calls remove_weak with this->begin() for iterator
 
   - iterator begin()
   - iterator end()
@@ -46,6 +60,7 @@ Alexandr Poltavsky
 
 
 #include "atomic_data.h"
+#include <memory>
 
 template< typename T0, unsigned N0 > struct atomic_list {
 
@@ -95,7 +110,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
   atomic_list() : list{ new atomic_node{} }{ }
 
 
-  iterator insert_weak( T0 value ) {
+  iterator insert( T0 value ) {
     return insert_weak( {list}, (T0&&) value );
   }
 

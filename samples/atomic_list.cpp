@@ -48,7 +48,9 @@ int main() {
   //populate the list with list_size members
   //after test insertions/removals we will check that the size is still list_size
   for( uint i = 0; i < list_size; i++ ) {
-    atomic_list_t::iterator it = atomic_list0.insert_weak( i );
+    atomic_list_t::iterator it = atomic_list0.insert( i );
+    //test lock a node to see the effect of locking
+    //it should remain in the list forever
     if( i == 3 ) (*it)->lock = true;
   }
 
@@ -69,7 +71,7 @@ int main() {
     //generate random position
     std::uniform_int_distribution<uint> engine0{0, list_size+list_size/2};
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    std::mt19937 gen0( seed );
+    std::mt19937_64 gen0( seed );
 
     for( uint i = 0; i < iterations; i++ ){
 
@@ -98,7 +100,7 @@ int main() {
     //generate random position
     std::uniform_int_distribution<uint> engine0{0, list_size+list_size/2};
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    std::mt19937 gen0( seed );
+    std::mt19937_64 gen0( seed );
 
     for( uint i = 0; i < iterations; i++ ){
 

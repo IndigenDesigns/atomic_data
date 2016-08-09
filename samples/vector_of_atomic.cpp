@@ -38,7 +38,7 @@ int main() {
 
   auto fn = [&vector0]() {
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    std::mt19937 gen0( seed );
+    std::mt19937_64 gen0( seed );
     std::uniform_int_distribution<uint> engine0{0, vector_size-1};
 
     for( uint i = 0; i < iterations; i++ ){
