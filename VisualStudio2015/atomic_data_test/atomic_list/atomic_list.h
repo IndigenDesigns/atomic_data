@@ -81,6 +81,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
   struct iterator {
 
     iterator operator++() {
+      //safely acquire node_ptr to atomic_node using atomic_data->read method
       value = value->read( []( node* node0 ){
           return node0->next;
       });
@@ -160,7 +161,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
         return false;
       }
       
-      //try to lock the to be deleted node
+      //try to lock the to be deleted node (next node)
       bool r = node_next->update_weak( []( node* node0 ) {
         if( node0->lock ) return false;
         node0->lock = true;
@@ -182,7 +183,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
 
 
     if( ! r ) {
-      //unlock if we locked and still failed to update
+      //unlock if we successfully locked and still failed to update
       if( node_next ) 
         (*node_next)->lock = false;
       return {};
