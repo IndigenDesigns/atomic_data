@@ -1,6 +1,6 @@
 /*
 
-atomic_data can wrap containers and turn them into cocurrent data structures.
+atomic_data can wrap containers and turn them into concurrent data structures.
 Wrapping std::map is going to work but will be much slower on updates than simply 
 using a mutex (a lot of memory allocations). But using std::vector is a more
 viable option since it can reuse memory on copy.
