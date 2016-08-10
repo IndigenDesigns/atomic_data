@@ -29,6 +29,7 @@ const uint threads_size = 8;
 const uint iterations = 8192;
 const uint list_size = 15;
 
+template< typename T > void print_list( T& );
 
 int main() {
 
@@ -45,6 +46,8 @@ int main() {
   //used for generating values for insertion
   std::atomic<uint> counter{ list_size };
 
+  printf( "atomic_list.empty: %s\n\n", atomic_list0.empty() ? "true" : "false" );
+
   //populate the list with list_size members
   //after test insertions/removals we will check that the size is still list_size
   for( uint i = 0; i < list_size; i++ ) {
@@ -55,14 +58,7 @@ int main() {
   }
 
   printf( "list before test (the first 0 is the head node):\n" );
-
-  for( auto& node : atomic_list0 ) {
-    if( node->lock  )
-      printf( "(%d,%s) ", node->data, "locked");
-    else
-      printf( "%d ", node->data );
-  }
-
+  print_list( atomic_list0 );
   printf( "= *%d* elements\n\n", atomic_list0.size() );
 
   //insertions
@@ -130,18 +126,27 @@ int main() {
 
   for( auto& thread : threads ) thread.join();
 
-
   printf("list after test (the first 0 is the head node):\n");
+  print_list( atomic_list0 );
+  printf( "= *%d* elements\n\n", atomic_list0.size() );
 
-  for( auto& node : atomic_list0 ) {
+  printf( "clear atomic_list " );
+  atomic_list0.clear();
+  printf( "= *%d* elements left:\n", atomic_list0.size() );
+  print_list( atomic_list0 );
+
+  printf( "\n\natomic_list.empty: %s\n\n", atomic_list0.empty() ? "true" : "false" );
+
+  printf( "done\n" );
+
+}
+
+template< typename T > void print_list( T& atomic_list ) {
+  for( auto& node : atomic_list ) {
     if( node->lock  )
       printf( "(%d,%s) ", node->data, "locked");
     else
       printf( "%d ", node->data );
   }
-
-  printf( "= *%d* elements\n\n", atomic_list0.size() );
-
-  printf( "done\n" );
-
 }
+

@@ -43,37 +43,34 @@ extern "C" char *atomic_data_log() { return atomic_data_log_buffer; }
 
 namespace {
 
-  //test data structure
-  template< typename T, size_t N >
-  struct array_test {
-    static const size_t size = N;
-    T data[N];
-  };
-
   //edit to change the test setup
-  //total number of iterations = cycles * threads_size / array_size
-  //read_cycles is vary reading load
+  //total number of iterations = iterations * threads_size / array_size
+  //read_iterations is vary reading load
   using uint = unsigned;
-  const uint array_size = 16;
-  const uint cycles = 81920;
+  const uint array_size = 64;
+  const uint iterations = 81920;
   const uint threads_size = 8;
-  const uint read_cycles = 20;
+  const uint read_iterations = 20;
 
-  using array_t = array_test<uint, array_size>;
+  //test data structure
+  struct array_test {
+    unsigned data[ array_size ];
+  };
 
   //for testing exception safety
   bool flag_throw = true;
+
 }
 
 
 //Test Update
 //lookup the minimum value and increment it
-bool update( array_t *array_new ) {
+bool update( array_test *array_new ) {
 
   uint min = -1;
   size_t min_index = 0;
 
-  for( size_t i = 0; i < array_new->size; i++ ) {
+  for( size_t i = 0; i < array_size; i++ ) {
     if( array_new->data[ i ] < min ) {
       min = array_new->data[ i ];
       min_index = i;
@@ -93,20 +90,21 @@ bool update( array_t *array_new ) {
 }
 
 
+
 //Test Read
 //look up the minimum value and store in a dummy global
 volatile uint min_global = -1;
 
-void read( array_t *array ) {
+void read( array_test *array ) {
   volatile uint min = -1;
-  for( size_t t = 0; t < read_cycles; t++ ) {
-    for( size_t i = 0; i < array->size; i++ )
+  for( size_t t = 0; t < read_iterations; t++ ) {
+    for( size_t i = 0; i < array_size; i++ )
       min = min <= array->data[ i ] ? min : array->data[ i ];
     min_global = min;
   }
 }
 
-template< typename T > void test_atomic_data( T &array0 );
+template< typename T > void test_atomic_data( T& array0 );
 
 extern "C" void atomic_data_test() {
 
@@ -114,73 +112,63 @@ extern "C" void atomic_data_test() {
   atomic_data_log_ptr = atomic_data_log_buffer;
 
   //an instance of atomic_data
-  atomic_data<array_t, threads_size * 2> atomic_array{ new array_t{ }};
+  atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{ } };
 
   //test copy/move/assign
   auto atomic_array_copy = atomic_array;
   auto atomic_array_move = (decltype(atomic_array)&&) atomic_array_copy;
   atomic_array_move = atomic_array;
 
-  //and instance of atomic_data_mutex to compare perfomance
-  atomic_data_mutex<array_t> atomic_array_mutex{ new array_t{ }};
+  //and an instance of atomic_data_mutex to compare perfomance
+  atomic_data_mutex<array_test> atomic_array_mutex{ new array_test{ } };
 
-  printf( "Test parameters:\n\tCPU: %d core(s) %s\n\tarray size: %d\n\titerations: %d\n\tthreads: %d\n\tread iterations: %d\n\tIncrements/array cell: %d\n",
-          std::thread::hardware_concurrency(), cpu, array_size, cycles, threads_size, read_cycles, cycles * threads_size / array_size );
-
-  printf( "\nstart testing atomic_data\n" );
-  test_atomic_data( atomic_array );
+  printf( "Test parameters:\n\tCPU: %d core(s)\n\tarray size: %d\n\titerations: %d\n\tthreads: %d\n\tread iterations: %d\n\tIncrements/array cell: %d\n",
+    std::thread::hardware_concurrency(), array_size, iterations, threads_size, read_iterations, iterations * threads_size / array_size );
 
   printf( "\nstart testing atomic_data_mutex\n" );
   test_atomic_data( atomic_array_mutex );
 
+  printf( "\nstart testing atomic_data\n" );
+  test_atomic_data( atomic_array );
+
 }
 
-//test function
+//test function 
 //creates thread_size threads with fn functor as a parameter and calcs the time
 template< typename T >
-void test_atomic_data( T &array0 ) {
+void test_atomic_data( T& array0 ) {
 
   auto fn = [ &array0 ]() {
-    uint i = 0;
-    while( i++ < cycles ) {
+    size_t i = 0;
+    while( i++ < iterations ) {
       try {
-        if( i % 3 == 0 ) {
-          array0.update( update );
-          array0.read( read );
-        }
-        else {
-          array0.read( read );
-          array0.update( update );
-        }
+        if( i % 3 == 0 ) { array0.update( update ); array0.read( read ); }
+        else { array0.read( read ); array0.update( update ); }
       }
-      catch( ... ) {
-        printf( "Got a test exception. Try again...\n" );
-        --i;
-      }
+      catch( ... ) { printf( "Got a test exception. Try again...\n" ); --i; }
     }
 
   };
 
-  //clear array
+  //clear the array
   for( auto &i : array0->data ) i = 0;
 
-  printf( "start threads (%u update/read iterations)\n", cycles * 8 );
+  printf( "start threads (%d update/read iterations)\n", iterations * 8 );
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::thread threads[threads_size];
-  for( auto &thread : threads ) thread = std::thread{ fn };
-  for( auto &thread : threads ) thread.join();
+  std::thread threads[ threads_size ];
+  for( auto& thread : threads ) thread = std::thread{ fn };
+  for( auto& thread : threads ) thread.join();
 
-  uint time = (uint) std::chrono::duration_cast< std::chrono::milliseconds >(
-    std::chrono::high_resolution_clock::now() - start ).count();
+  uint time = (uint) std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - start ).count();
   printf( "time = %u\n", time );
 
-  uint value_check = cycles * threads_size / array_size;
+  uint value_check = iterations * threads_size / array_size;
 
   printf( "check that array elements are all equal %d: ", value_check );
 
-  for( uint i = 0; i < array0->size; i++ ) {
+  for( uint i = 0; i < array_size; i++ ) {
     if( value_check != array0->data[ i ] ) {
       printf( "failed! data[%u] = %d\n", i, array0->data[ i ] );
       value_check = 0;

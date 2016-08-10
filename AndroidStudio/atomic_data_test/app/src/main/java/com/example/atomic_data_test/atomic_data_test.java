@@ -17,6 +17,7 @@ import android.app.Activity;
 import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -34,9 +35,9 @@ public class atomic_data_test extends Activity
         Log.wtf( "atomic_data", "Activity onCreate" );
 
         tv0 = new TextView(this);
-        tv0.setTextSize(tv0.getTextSize() * 1.2f);
         tv0.setText("...");
         tv0.setMovementMethod( new ScrollingMovementMethod() );
+        tv0.setTextSize( TypedValue.COMPLEX_UNIT_PX, tv0.getTextSize() * 1.2f );
 
         b0 = new Button( this );
         b0.setTransformationMethod(null);

@@ -51,6 +51,15 @@ methods:
   standard methods, atomic_list can be used in range-based for loops
   but remember that the first element is always present and is the head of the list
 
+  - size_t size()
+  get the number of nodes in the list
+
+  - void clear()
+  remove nodes from the begining until nothing is left
+
+  - bool empty()
+  check if the list has elements
+
 License: Public-domain Software.
 
 Blog post: http://alexpolt.github.io/atomic-data.html
@@ -202,6 +211,17 @@ template< typename T0, unsigned N0 > struct atomic_list {
     }
     //minus one for the head
     return count-1;
+  }
+
+  void clear() {
+    auto it = begin();
+    while( remove_weak( it) );
+  }
+
+  bool empty() {
+    return ! list->read( []( node* node0 ) {
+      return node0->next;
+    });
   }
 
   node_ptr list;
