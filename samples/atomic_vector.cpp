@@ -43,7 +43,7 @@ namespace {
 
 
 //Test Update
-//lookup the minimum value and increment it
+//look up the minimum value and increment it
 bool update( atomic_vector_t *vector_new ) {
 
   uint min = -1;

@@ -57,7 +57,7 @@ namespace {
 #endif
 
 //Test Update
-//lookup the minimum value and increment it
+//look up the minimum value and increment it
 bool update( array_test *array_new ) {
 
   uint min = -1;
