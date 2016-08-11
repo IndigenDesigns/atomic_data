@@ -112,6 +112,12 @@ extern "C" void atomic_data_test() {
   //reset log pointer
   atomic_data_log_ptr = atomic_data_log_buffer;
 
+  uint iterations_per_cell = iterations * threads_size / array_size;
+  if( iterations_per_cell * array_size != iterations * threads_size ) {
+    printf( "iterations * threads_size / array_size = %.2f - not a whole number\n", float(iterations) * threads_size / array_size );
+    printf( "please correct the numbers for it to be evenly divisible\n" );
+  }
+
   //an instance of atomic_data
   atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{ } };
 

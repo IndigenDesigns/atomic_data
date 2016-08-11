@@ -27,14 +27,14 @@ Alexandr Poltavsky
 namespace {
 
   //edit to change the test setup
-  //total number of iterations = cycles * threads_size / array_size
-  //read_cycles is vary reading load
+  //total number of iterations = iterations * threads_size / array_size
+  //read_iterations is vary reading load
   using uint = unsigned;
   using atomic_vector_t = std::vector<uint>;
   const uint array_size = 256;
-  const uint cycles = 8192;
+  const uint iterations = 8192;
   const uint threads_size = 8;
-  const uint read_cycles = 20;
+  const uint read_iterations = 20;
 
   //for testing exception safety
   bool flag_throw = false;
@@ -75,7 +75,7 @@ volatile uint min_global = -1;
 
 void read( atomic_vector_t *vector ) {
   volatile uint min = -1;
-  for( size_t t = 0; t < read_cycles; t++ ) {
+  for( size_t t = 0; t < read_iterations; t++ ) {
     for( size_t i = 0; i < array_size; i++ )
       min = min <= (*vector)[ i ] ? min : (*vector)[ i ];
     min_global = min;
@@ -85,6 +85,13 @@ void read( atomic_vector_t *vector ) {
 template< typename T > void test_atomic_vector( T& );
 
 int main() {
+
+  uint iterations_per_cell = iterations * threads_size / array_size;
+  if( iterations_per_cell * array_size != iterations * threads_size ) {
+    printf( "iterations * threads_size / array_size = %.2f - not a whole number\n", float(iterations) * threads_size / array_size );
+    printf( "please correct the numbers for it to be evenly divisible\n" );
+    return 1;
+  }
 
   //an instance of atomic_data
   atomic_data<atomic_vector_t, threads_size * 2> atomic_vector{ new atomic_vector_t( array_size ) };
@@ -98,16 +105,13 @@ int main() {
   atomic_data_mutex<atomic_vector_t> atomic_vector_mutex{ new atomic_vector_t( array_size ) };
 
   printf( "Test parameters:\n\tCPU: %d core(s)\n\tarray size: %d\n\titerations: %d\n\tthreads: %d\n\tread iterations: %d\n\tIncrements/array cell: %d\n",
-    std::thread::hardware_concurrency(), array_size, cycles, threads_size, read_cycles, cycles * threads_size / array_size );
+    std::thread::hardware_concurrency(), array_size, iterations, threads_size, read_iterations, iterations * threads_size / array_size );
 
   printf( "\nstart testing atomic_vector\n" );
   test_atomic_vector( atomic_vector );
 
   printf( "\nstart testing atomic_vector_mutex\n" );
   test_atomic_vector( atomic_vector_mutex );
-
-  printf("\npress enter\n");
-  getchar();
 
 }
 
@@ -118,7 +122,7 @@ void test_atomic_vector( T& atomic_vector ) {
 
   auto fn = [ &atomic_vector ]() {
     size_t i = 0;
-    while( i++ < cycles ) {
+    while( i++ < iterations ) {
       try {
         if( i % 3 == 0 ) { atomic_vector.update( update ); atomic_vector.read( read ); }
         else { atomic_vector.read( read ); atomic_vector.update( update ); }
@@ -131,7 +135,7 @@ void test_atomic_vector( T& atomic_vector ) {
   //clear array
   for( auto &i : *atomic_vector ) i = 0;
 
-  printf( "start threads (%d update/read iterations)\n", cycles * 8 );
+  printf( "start threads (%d update/read iterations)\n", iterations * 8 );
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -142,7 +146,7 @@ void test_atomic_vector( T& atomic_vector ) {
   uint time = (uint) std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - start ).count();
   printf( "time = %u\n", time );
 
-  uint value_check = cycles * threads_size / array_size;
+  uint value_check = iterations * threads_size / array_size;
 
   printf( "check that array elements are all equal %d: ", value_check );
 

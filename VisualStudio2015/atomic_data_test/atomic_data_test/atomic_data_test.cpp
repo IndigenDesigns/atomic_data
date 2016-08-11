@@ -103,6 +103,15 @@ template< typename T > void test_atomic_data( T& array0 );
 
 int main() {
 
+  uint iterations_per_cell = iterations * threads_size / array_size;
+  if( iterations_per_cell * array_size != iterations * threads_size ) {
+    printf( "iterations * threads_size / array_size = %.2f - not a whole number\n", float(iterations) * threads_size / array_size );
+    printf( "please correct the numbers for it to be evenly divisible\n" );
+    printf( "press enter\n" );
+    getchar();
+    return 1;
+  }
+
   #pragma comment( lib, "winmm.lib" )
   timeBeginPeriod( 0 );
 
