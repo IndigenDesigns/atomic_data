@@ -31,7 +31,7 @@ namespace {
   //we check at the end that all array elements are equal that value
   //read_iterations is to vary reading load
   using uint = unsigned;
-  const uint array_size = 65;
+  const uint array_size = 64;
   const uint iterations = 81920;
   const uint threads_size = 8;
   const uint read_iterations = 20;
