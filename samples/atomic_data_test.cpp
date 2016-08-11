@@ -42,7 +42,7 @@ namespace {
   };
 
   //for testing exception safety
-  bool flag_throw = true;
+  bool flag_throw = false;
 
 }
 
@@ -106,11 +106,11 @@ int main() {
   printf( "Test parameters:\n\tCPU: %d core(s)\n\tarray size: %d\n\titerations: %d\n\tthreads: %d\n\tread iterations: %d\n\tIncrements/array cell: %d\n",
     std::thread::hardware_concurrency(), array_size, iterations, threads_size, read_iterations, iterations * threads_size / array_size );
 
-  printf( "\nstart testing atomic_data_mutex\n" );
-  test_atomic_data( atomic_array_mutex );
-
   printf( "\nstart testing atomic_data\n" );
   test_atomic_data( atomic_array );
+
+  printf( "\nstart testing atomic_data_mutex\n" );
+  test_atomic_data( atomic_array_mutex );
 
 }
 
