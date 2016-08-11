@@ -69,13 +69,13 @@ bool update( array_test *array_new ) {
     }
   }
 
-  array_new->data[ min_index ]++;
-
   //test exception safety
   if( flag_throw && array_new->data[ min_index ] == 10 ) {
     flag_throw = false;
     throw 1;
   }
+
+  array_new->data[ min_index ]++;
 
   //signal that we are ok for the update
   return true;

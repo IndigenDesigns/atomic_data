@@ -46,8 +46,6 @@ int main() {
   //used for generating values for insertion
   std::atomic<uint> counter{ list_size };
 
-  printf( "atomic_list.empty: %s\n\n", atomic_list0.empty() ? "true" : "false" );
-
   //populate the list with list_size members
   //after test insertions/removals we will check that the size is still list_size
   for( uint i = 0; i < list_size; i++ ) {
@@ -59,7 +57,8 @@ int main() {
 
   printf( "list before test (the first 0 is the head node):\n" );
   print_list( atomic_list0 );
-  printf( "= *%d* elements\n\n", atomic_list0.size() );
+  uint list_size_orig = atomic_list0.size();
+  printf( "= *%d* elements\n\n", list_size_orig );
 
   //insertions
   auto fn_insert = [ &atomic_list0, &counter ]() {
@@ -126,16 +125,16 @@ int main() {
 
   for( auto& thread : threads ) thread.join();
 
-  printf("list after test (the first 0 is the head node):\n");
+  printf( "list after test (the first 0 is the head node):\n");
   print_list( atomic_list0 );
   printf( "= *%d* elements\n\n", atomic_list0.size() );
+
+  printf( "test: %s!\n\n", list_size_orig == atomic_list0.size() ? "passed" : "failed" );
 
   printf( "clear atomic_list " );
   atomic_list0.clear();
   printf( "= *%d* elements left:\n", atomic_list0.size() );
   print_list( atomic_list0 );
-
-  printf( "\n\natomic_list.empty: %s\n\n", atomic_list0.empty() ? "true" : "false" );
 
   printf( "done\n" );
 

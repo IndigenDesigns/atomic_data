@@ -56,13 +56,13 @@ bool update( atomic_vector_t *vector_new ) {
     }
   }
 
-  (*vector_new)[ min_index ]++;
-
   //test exception safety
   if( flag_throw && (*vector_new)[ min_index ] == 10 ) {
     flag_throw = false;
     throw 1;
   }
+
+  (*vector_new)[ min_index ]++;
 
   //signal that we are ok for the update
   return true;
