@@ -4,7 +4,7 @@
   This repo contains three folders:
 
   * In [Samples](https://github.com/alexpolt/atomic_data/tree/master/samples) 
-    you'll find **atomic\_data** samples such as
+    you'll find **atomic\_data** samples (and a **makefile**) such as
     a concurrent linked list with insertion/removal at any point, a std::vector of 
     **atomic\_data** and a **atomic\_data** of std::vector and the one, that was
     helpful in testing memory barriers on ARM - **atomic\_data** wrapping an array 
