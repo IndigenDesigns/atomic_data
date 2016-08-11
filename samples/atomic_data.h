@@ -8,8 +8,8 @@ API:
 
 to create an instance:
 
-  - atomic_data< data_type, queue_size >
-  where queue_size = 2 * number of threads is usually enough
+  - atomic_data< data_type, queue_size = 8 >
+  where queue_size = 2 * number of threads is usually enough (8 is by default)
   synchronization happens once in a queue_size allocations from the queue
 
 methods:
@@ -39,7 +39,7 @@ Alexandr Poltavsky
 #include <thread>
 
 
-template< typename T0, unsigned N0 >
+template< typename T0, unsigned N0 = 8 >
 struct atomic_data {
 
   static_assert( N0 != 0 && ( N0 & ( N0 - 1 ) ) == 0, "Queue size must be a power of two!" );

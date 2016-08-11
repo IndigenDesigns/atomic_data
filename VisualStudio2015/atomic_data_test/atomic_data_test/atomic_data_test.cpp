@@ -9,8 +9,6 @@ and no increments are lost. This kind of test was very helpful in
 testing on an ARM smartphone (you can check out Anroid Studio project).
 
 Here we compare the timings with a pure mutex approach.
-If we assign read_iterations = 0 or make array_size too big
-then on Windows 7 mutex becomes faster than atomic_data.
 
 License: Public-domain Software.
 
@@ -33,8 +31,9 @@ Alexandr Poltavsky
 namespace {
 
   //edit to change the test setup
-  //total number of iterations = iterations * threads_size / array_size
-  //read_iterations is vary reading load
+  //total number of increments/array cell = iterations * threads_size / array_size
+  //we check at the end that all array elements are equal that value
+  //read_iterations is to vary reading load
   using uint = unsigned;
   const uint array_size = 64;
   const uint iterations = 81920;

@@ -44,8 +44,9 @@ extern "C" char *atomic_data_log() { return atomic_data_log_buffer; }
 namespace {
 
   //edit to change the test setup
-  //total number of iterations = iterations * threads_size / array_size
-  //read_iterations is vary reading load
+  //total number of increments/array cell = iterations * threads_size / array_size
+  //we check at the end that all array elements are equal that value
+  //read_iterations is to vary reading load
   using uint = unsigned;
   const uint array_size = 64;
   const uint iterations = 81920;
