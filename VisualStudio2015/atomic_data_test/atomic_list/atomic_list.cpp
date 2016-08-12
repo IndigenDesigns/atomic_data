@@ -33,8 +33,8 @@ template< typename T > void print_list( T& );
 
 int main() {
 
-  printf( "Test parameters:\n\t CPU: %d core(s)\n\t list size: %d\n\t iterations: %d\n\t threads: %d\n\n",
-    std::thread::hardware_concurrency(), list_size, threads_size*iterations, threads_size );
+  printf( "Test parameters:\n\t CPU: %d core(s)\n\t list size: %d\n\t iterations/thread: %d\n\t threads: %d\n\n",
+    std::thread::hardware_concurrency(), list_size, iterations, threads_size );
 
   printf( "start testing atomic_list<int>\n\n" );
 
@@ -128,14 +128,14 @@ int main() {
   print_list( atomic_list0 );
   printf( "= *%d* elements\n\n", atomic_list0.size() );
 
-  printf( "test: %s!\n\n", list_size == atomic_list0.size() ? "passed" : "failed" );
+  printf( "test: %s!\n\n", list_size == atomic_list0.size() ? "Passed" : "Failed" );
 
   printf( "clear atomic_list " );
   atomic_list0.clear();
   printf( "= *%d* elements left:\n", atomic_list0.size() );
   print_list( atomic_list0 );
 
-  printf("press enter\n");
+  printf("\n\npress enter\n");
   getchar();
 
 }
