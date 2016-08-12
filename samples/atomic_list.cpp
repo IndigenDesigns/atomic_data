@@ -57,8 +57,7 @@ int main() {
 
   printf( "list before test (the first 0 is the head node):\n" );
   print_list( atomic_list0 );
-  uint list_size_orig = atomic_list0.size();
-  printf( "= *%d* elements\n\n", list_size_orig );
+  printf( "= *%d* elements\n\n", atomic_list0.size() );
 
   //insertions
   auto fn_insert = [ &atomic_list0, &counter ]() {
@@ -129,7 +128,7 @@ int main() {
   print_list( atomic_list0 );
   printf( "= *%d* elements\n\n", atomic_list0.size() );
 
-  printf( "test: %s!\n\n", list_size_orig == atomic_list0.size() ? "passed" : "failed" );
+  printf( "test: %s!\n\n", list_size == atomic_list0.size() ? "passed" : "failed" );
 
   printf( "clear atomic_list " );
   atomic_list0.clear();
