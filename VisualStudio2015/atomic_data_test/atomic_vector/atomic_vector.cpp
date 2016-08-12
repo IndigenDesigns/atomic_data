@@ -26,15 +26,21 @@ Alexandr Poltavsky
 
 namespace {
 
+  using uint = unsigned;
+  using atomic_vector_t = std::vector<uint>;
+
   //edit to change the test setup
   //total number of iterations = iterations * threads_size / array_size
   //read_iterations is vary reading load
-  using uint = unsigned;
-  using atomic_vector_t = std::vector<uint>;
+
   const uint array_size = 256;
   const uint iterations = 8192;
   const uint threads_size = 8;
   const uint read_iterations = 20;
+
+  static_assert( ( iterations*threads_size/array_size ) * array_size == iterations * threads_size , 
+                  "ERROR: iterations * threads_size / array_size is not a whole number, "
+                  "please correct the numbers for it to be evenly divisible " );
 
   //for testing exception safety
   bool flag_throw = false;
@@ -85,15 +91,6 @@ void read( atomic_vector_t *vector ) {
 template< typename T > void test_atomic_vector( T& );
 
 int main() {
-
-  uint iterations_per_cell = iterations * threads_size / array_size;
-  if( iterations_per_cell * array_size != iterations * threads_size ) {
-    printf( "iterations * threads_size / array_size = %.2f - not a whole number\n", float(iterations) * threads_size / array_size );
-    printf( "please correct the numbers for it to be evenly divisible\n" );
-    printf( "press enter\n" );
-    getchar();
-    return 1;
-  }
 
   //an instance of atomic_data
   atomic_data<atomic_vector_t, threads_size * 2> atomic_vector{ new atomic_vector_t( array_size ) };

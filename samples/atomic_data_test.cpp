@@ -26,15 +26,21 @@ Alexandr Poltavsky
 
 namespace {
 
+  using uint = unsigned;
+
   //edit to change the test setup
   //total number of increments/array cell = iterations * threads_size / array_size
   //we check at the end that all array elements are equal that value
   //read_iterations is to vary reading load
-  using uint = unsigned;
+
   const uint array_size = 64;
   const uint iterations = 81920;
   const uint threads_size = 8;
   const uint read_iterations = 20;
+
+  static_assert( ( iterations*threads_size/array_size ) * array_size == iterations * threads_size , 
+                  "ERROR: iterations * threads_size / array_size is not a whole number, "
+                  "please correct the numbers for it to be evenly divisible " );
 
   //test data structure
   struct array_test {
@@ -91,13 +97,6 @@ void read( array_test *array ) {
 template< typename T > void test_atomic_data( T& array0 );
 
 int main() {
-
-  uint iterations_per_cell = iterations * threads_size / array_size;
-  if( iterations_per_cell * array_size != iterations * threads_size ) {
-    printf( "iterations * threads_size / array_size = %.2f - not a whole number\n", float(iterations) * threads_size / array_size );
-    printf( "please correct the numbers for it to be evenly divisible\n" );
-    return 1;
-  }
 
   //an instance of atomic_data
   atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{ } };

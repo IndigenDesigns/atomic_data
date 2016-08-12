@@ -215,7 +215,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
 
   void clear() {
     auto it = begin();
-    while( remove_weak( it) );
+    while( remove_weak( it ) );
   }
 
   bool empty() {
