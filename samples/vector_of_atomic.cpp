@@ -34,7 +34,7 @@ int main() {
 
   printf( "start testing vector of atomic_data<int,%u>\n", threads_size*2 );
 
-  std::vector< atomic_data<int, threads_size*2> > vector0{ vector_size };
+  std::vector< atomic_data<uint, threads_size*2> > vector0{ vector_size };
 
   auto fn = [&vector0]() {
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -43,7 +43,7 @@ int main() {
 
     for( uint i = 0; i < iterations; i++ ){
       uint index = engine0( gen0 );
-      vector0[ index ].update( []( int* data ) {
+      vector0[ index ].update( []( uint* data ) {
         (*data)++;
         //for fun
         std::this_thread::yield();
@@ -62,7 +62,7 @@ int main() {
 
   uint sum{};
 
-  for( auto i : vector0 ) sum += *i;
+  for( auto &i : vector0 ) sum += i.read( []( uint *data ){ return *data; } );
 
   printf( sum == total ? "passed!\n" : "failed!\n" );
 
@@ -70,7 +70,7 @@ int main() {
 
   std::sort( begin( vector0 ), end( vector0 ) );
 
-  for( auto i : vector0 ) printf( "%u ", *i );
+  for( auto &i : vector0 ) printf( "%u ", i.read( []( uint *data ){ return *data; } ) );
 
   printf( "\ndone\n" );
 

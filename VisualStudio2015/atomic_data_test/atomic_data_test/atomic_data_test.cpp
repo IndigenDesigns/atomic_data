@@ -21,10 +21,6 @@ Alexandr Poltavsky
 #include <cstdio>
 #include <chrono>
 
-//crt secure warnings
-#pragma warning( disable : 4996 )
-#include <windows.h>
-
 #include "atomic_data.h"
 #include "atomic_data_mutex.h"
 
@@ -48,7 +44,7 @@ namespace {
 
   //test data structure
   struct array_test {
-    unsigned data[ array_size ];
+    uint data[ array_size ];
   };
 
   //for testing exception safety
@@ -56,10 +52,6 @@ namespace {
 
 }
 
-//for VS compiler
-#if defined( _WIN32 ) && defined( _MSC_VER )
-# pragma optimize( "", off )
-#endif
 
 //Test Update
 //look up the minimum value and increment it
@@ -87,10 +79,7 @@ bool update( array_test *array_new ) {
   return true;
 }
 
-//for VS compiler
-#if defined( _WIN32 ) && defined( _MSC_VER )
-# pragma optimize( "", off )
-#endif
+
 
 //Test Read
 //look up the minimum value and store in a dummy global
@@ -109,11 +98,8 @@ template< typename T > void test_atomic_data( T& array0 );
 
 int main() {
 
-  #pragma comment( lib, "winmm.lib" )
-  timeBeginPeriod( 0 );
-
   //an instance of atomic_data
-  atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{ } };
+  atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{} };
 
   //test copy/move/assign
   auto atomic_array_copy = atomic_array;
@@ -121,18 +107,16 @@ int main() {
   atomic_array_move = atomic_array;
 
   //and an instance of atomic_data_mutex to compare perfomance
-  atomic_data_mutex<array_test> atomic_array_mutex{ new array_test{ } };
+  atomic_data_mutex<array_test> atomic_array_mutex{ new array_test{} };
 
   printf( "Test parameters:\n\tCPU: %d core(s)\n\tarray size: %d\n\titerations: %d\n\tthreads: %d\n\tread iterations: %d\n\tIncrements/array cell: %d\n",
     std::thread::hardware_concurrency(), array_size, iterations, threads_size, read_iterations, iterations * threads_size / array_size );
 
-  printf( "\nstart testing atomic_data_mutex\n" );
-  test_atomic_data( atomic_array_mutex );
-
   printf( "\nstart testing atomic_data\n" );
   test_atomic_data( atomic_array );
 
-  timeEndPeriod( 0 );
+  printf( "\nstart testing atomic_data_mutex\n" );
+  test_atomic_data( atomic_array_mutex );
 
   printf("\npress enter\n");
   getchar();
@@ -156,9 +140,6 @@ void test_atomic_data( T& array0 ) {
 
   };
 
-  //clear the array
-  for( auto &i : array0->data ) i = 0;
-
   printf( "start threads (%d update/read iterations)\n", iterations * 8 );
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -174,15 +155,17 @@ void test_atomic_data( T& array0 ) {
 
   printf( "check that array elements are all equal %d: ", value_check );
 
-  for( uint i = 0; i < array_size; i++ ) {
-    if( value_check != array0->data[ i ] ) {
-      printf( "failed! data[%u] = %d\n", i, array0->data[ i ] );
-      value_check = 0;
-      break;
+  bool r = array0.read( [value_check]( array_test* array0 ){ 
+    for( uint i = 0; i < array_size; i++ ) {
+      if( value_check != array0->data[ i ] ) {
+        printf( "failed! data[%u] = %d\n", i, array0->data[ i ] );
+        return false;
+      }
     }
-  }
+    return true;
+  } );
 
-  if( value_check != 0 ) {
+  if( r ) {
     printf( "Passed!\n" );
   }
 

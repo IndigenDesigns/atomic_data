@@ -43,19 +43,25 @@ extern "C" char *atomic_data_log() { return atomic_data_log_buffer; }
 
 namespace {
 
+  using uint = unsigned;
+
   //edit to change the test setup
   //total number of increments/array cell = iterations * threads_size / array_size
   //we check at the end that all array elements are equal that value
   //read_iterations is to vary reading load
-  using uint = unsigned;
+
   const uint array_size = 64;
   const uint iterations = 81920;
   const uint threads_size = 8;
   const uint read_iterations = 20;
 
+  static_assert( ( iterations*threads_size/array_size ) * array_size == iterations * threads_size , 
+                  "ERROR: iterations * threads_size / array_size is not a whole number, "
+                  "please correct the numbers for it to be evenly divisible " );
+
   //test data structure
   struct array_test {
-    unsigned data[ array_size ];
+    uint data[ array_size ];
   };
 
   //for testing exception safety
@@ -112,14 +118,8 @@ extern "C" void atomic_data_test() {
   //reset log pointer
   atomic_data_log_ptr = atomic_data_log_buffer;
 
-  uint iterations_per_cell = iterations * threads_size / array_size;
-  if( iterations_per_cell * array_size != iterations * threads_size ) {
-    printf( "iterations * threads_size / array_size = %.2f - not a whole number\n", float(iterations) * threads_size / array_size );
-    printf( "please correct the numbers for it to be evenly divisible\n" );
-  }
-
   //an instance of atomic_data
-  atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{ } };
+  atomic_data<array_test, threads_size * 2> atomic_array{ new array_test{} };
 
   //test copy/move/assign
   auto atomic_array_copy = atomic_array;
@@ -127,7 +127,7 @@ extern "C" void atomic_data_test() {
   atomic_array_move = atomic_array;
 
   //and an instance of atomic_data_mutex to compare perfomance
-  atomic_data_mutex<array_test> atomic_array_mutex{ new array_test{ } };
+  atomic_data_mutex<array_test> atomic_array_mutex{ new array_test{} };
 
   printf( "Test parameters:\n\tCPU: %d core(s)\n\tarray size: %d\n\titerations: %d\n\tthreads: %d\n\tread iterations: %d\n\tIncrements/array cell: %d\n",
     std::thread::hardware_concurrency(), array_size, iterations, threads_size, read_iterations, iterations * threads_size / array_size );
@@ -157,9 +157,6 @@ void test_atomic_data( T& array0 ) {
 
   };
 
-  //clear the array
-  for( auto &i : array0->data ) i = 0;
-
   printf( "start threads (%d update/read iterations)\n", iterations * 8 );
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -175,15 +172,17 @@ void test_atomic_data( T& array0 ) {
 
   printf( "check that array elements are all equal %d: ", value_check );
 
-  for( uint i = 0; i < array_size; i++ ) {
-    if( value_check != array0->data[ i ] ) {
-      printf( "failed! data[%u] = %d\n", i, array0->data[ i ] );
-      value_check = 0;
-      break;
+  bool r = array0.read( [value_check]( array_test* array0 ){ 
+    for( uint i = 0; i < array_size; i++ ) {
+      if( value_check != array0->data[ i ] ) {
+        printf( "failed! data[%u] = %d\n", i, array0->data[ i ] );
+        return false;
+      }
     }
-  }
+    return true;
+  } );
 
-  if( value_check != 0 ) {
+  if( r ) {
     printf( "Passed!\n" );
   }
 

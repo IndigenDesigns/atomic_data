@@ -43,7 +43,7 @@ namespace {
                   "please correct the numbers for it to be evenly divisible " );
 
   //for testing exception safety
-  bool flag_throw = false;
+  bool flag_throw = true;
 
 }
 
@@ -134,9 +134,6 @@ void test_atomic_vector( T& atomic_vector ) {
 
   };
 
-  //clear array
-  for( auto &i : *atomic_vector ) i = 0;
-
   printf( "start threads (%d update/read iterations)\n", iterations * 8 );
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -152,15 +149,17 @@ void test_atomic_vector( T& atomic_vector ) {
 
   printf( "check that array elements are all equal %d: ", value_check );
 
-  for( uint i = 0; i < array_size; i++ ) {
-    if( value_check != (*atomic_vector)[ i ] ) {
-      printf( "failed! data[%u] = %d\n", i, (*atomic_vector)[ i ] );
-      value_check = 0;
-      break;
+  bool r = atomic_vector.read( [value_check]( atomic_vector_t* vector0 ){ 
+    for( uint i = 0; i < array_size; i++ ) {
+      if( value_check != (*vector0)[ i ] ) {
+        printf( "failed! data[%u] = %d\n", i, (*vector0)[ i ] );
+        return false;
+      }
     }
-  }
+    return true;
+  } );
 
-  if( value_check != 0 ) {
+  if( r ) {
     printf( "Passed!\n" );
   }
 

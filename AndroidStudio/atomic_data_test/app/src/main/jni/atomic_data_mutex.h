@@ -47,16 +47,8 @@ struct atomic_data_mutex {
     return fn( data );
   }
 
-  //Lock/Unlock Methods
-  uint lock_read() const { return 0; }
-  void unlock_read( uint counter ) const {}
-
-  T0* operator->() { return data; }
-  T0 const* operator->() const { return data; }
-  T0& operator*() { return *data; }
-  T0 const & operator*() const { return *data; }
-  T0& get() { return *data; }
-  T0 const& get() const { return *data; }
+  T0 const* operator->() const = delete;
+  T0 const& operator*() const = delete;
 
   //pointer to current data
   T0* data;

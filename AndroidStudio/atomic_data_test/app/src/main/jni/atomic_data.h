@@ -1,5 +1,4 @@
 #pragma once
-
 /*
 
 atomic_data: A Multibyte General Purpose Lock-Free Data Structure
@@ -8,8 +7,8 @@ API:
 
 to create an instance:
 
-  - atomic_data< data_type, queue_size >
-  where queue_size = 2 * number of threads is usually enough
+  - atomic_data< data_type, queue_size = 8 >
+  where queue_size = 2 * number of threads is usually enough (8 is by default)
   synchronization happens once in a queue_size allocations from the queue
 
 methods:
@@ -17,17 +16,15 @@ methods:
   - void update( F )
   - bool update_weak ( F )
   where F - a functor which accepts a pointer to data type and returns a bool on ok/not ok to perform actual update
-  update calls update_weak in a loop, update is not reentrant (due to sync barrier), update_weak is reentrant
+  update calls update_weak in a loop, update is not reentrant (due to a sync barrier), update_weak is reentrant
   on success returns true, false otherwise, in particular if you return false from your functor the method will also fail
 
   - auto read( F )
   where F - a functor which accepts a pointer to data type and returns the return value of the functor or void
 
-  - data_type* operator->()
-  - data_type& operator*()
-  - data_type* get()
-  standard methods
-
+  - data_type* operator->() = delete;
+  - data_type& operator*() = delete;
+  getting the raw pointer to wrapped data is undesired because it changes on every update call
 
 License: Public-domain Software.
 
@@ -38,8 +35,7 @@ Alexandr Poltavsky
 #include <atomic>
 #include <thread>
 
-
-template< typename T0, unsigned N0 >
+template< typename T0, unsigned N0 = 8 >
 struct atomic_data {
 
   static_assert( N0 != 0 && ( N0 & ( N0 - 1 ) ) == 0, "Queue size must be a power of two!" );
@@ -95,7 +91,9 @@ struct atomic_data {
     }
 
     ~init_static() {
-      for( uint i = left.load(); i < queue_size; i++ ) delete queue[ i % array_size ];
+      for( uint i = left.load(), end = right.load(); i < end; i++ ) {
+        delete queue[ i % array_size ];
+      }
     }
 
     //for assuring static initialization
@@ -193,12 +191,9 @@ struct atomic_data {
     std::this_thread::yield();
   }
 
-  T0* operator->() { return data.load(); }
-  T0 const* operator->() const { return data.load(); }
-  T0& operator*() { return *data.load(); }
-  T0 const& operator*() const { return *data.load(); }
-  T0* get() { return data.load(); }
-  T0 const * get() const { return data.load(); }
+  //We don't normally want users to get to the pointer because the pointer changes on every update.
+  T0 const* operator->() const = delete;
+  T0 const& operator*() const = delete;
 
   //Helper Class with Relaxed Loads and Stores by Default
   template< typename U0 >
@@ -309,9 +304,9 @@ template< typename T0, unsigned N0 > typename atomic_data<T0, N0>::counter_t ato
 template< typename T0, unsigned N0 > typename atomic_data<T0, N0>::init_static atomic_data<T0, N0>::init;
 
 //comparison operators, makes it possible to use atomic_data in standard containers
-template< typename T0, unsigned N0 > bool operator==(const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return *lhs == *rhs; }
+template< typename T0, unsigned N0 > bool operator==(const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return *lhs.data.load() == *rhs.data.load(); }
 template< typename T0, unsigned N0 > bool operator!=(const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return !operator==(lhs,rhs); }
-template< typename T0, unsigned N0 > bool operator< (const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return *lhs < *rhs; }
+template< typename T0, unsigned N0 > bool operator< (const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return *lhs.data.load() < *rhs.data.load(); }
 template< typename T0, unsigned N0 > bool operator> (const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return  operator< (rhs,lhs); }
 template< typename T0, unsigned N0 > bool operator<=(const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return !operator> (lhs,rhs); }
 template< typename T0, unsigned N0 > bool operator>=(const atomic_data<T0, N0>& lhs, const atomic_data<T0, N0>& rhs){ return !operator< (lhs,rhs); }

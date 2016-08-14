@@ -98,7 +98,10 @@ void test_atomic_map( T& atomic_map ) {
   };
 
   //clear the map
-  atomic_map->clear();
+  atomic_map.update( []( map* map0 ){
+    map0->clear();
+    return true;
+  });
 
   printf( "start %d threads\n", threads_size );
 
@@ -118,8 +121,10 @@ void test_atomic_map( T& atomic_map ) {
 
   printf( "check # of increments = %d\n\n", cycles_update );
 
-  for( auto& i : *atomic_map ) {
-    printf( "thread %d -> %d increments\n", i.first, i.second );
-  }
+  atomic_map.read( []( map* map0 ){ 
+    for( auto& i : *map0 ) {
+      printf( "thread %d -> %d increments\n", i.first, i.second );
+    }
+  });
 
 }
