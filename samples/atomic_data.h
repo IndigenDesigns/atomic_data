@@ -42,8 +42,9 @@ struct atomic_data {
 
   using uint = unsigned;
 
-  //Default Constructor
-  atomic_data( T0* object = new T0{ } ) {
+  //Default Constructor (template to protect against passing in nullptr or null)
+  template<typename U0 = T0>
+  atomic_data( U0* object = new T0{ } ) {
     data = object;
     init.dummy_call();
   }
@@ -143,7 +144,7 @@ struct atomic_data {
     //on update failure or exception returns data_new back to the queue
     deallocate_guard dalloc{ data_new };
 
-    //copy
+    //copy, atomic_data{ nullptr } is allowed
     *data_new = *data_old;
 
     //update

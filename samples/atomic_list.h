@@ -27,7 +27,7 @@ types:
 create instance:
 
     - atomic_list< data_type, queue_length >
-    where queue_length is passed to atomic_data
+    where queue_length is passed to atomic_data, 8 by default
 
 methods:
 
@@ -74,7 +74,7 @@ Alexandr Poltavsky
 #include "atomic_data.h"
 #include <memory>
 
-template< typename T0, unsigned N0 > struct atomic_list {
+template< typename T0, unsigned N0 = 8 > struct atomic_list {
 
   static_assert( N0 > 1, "queue_size for the atomic_list must be greater than 1 because the remove() method requires 2 allocations from the queue." );
 
@@ -85,10 +85,10 @@ template< typename T0, unsigned N0 > struct atomic_list {
   using size_t = unsigned;
 
   struct node {
-    bool locked;
-    bool deleted;
     T0 data;
     node_ptr next;
+    bool locked;
+    bool deleted;
   };
 
   struct iterator {
@@ -120,20 +120,21 @@ template< typename T0, unsigned N0 > struct atomic_list {
       });
     }
 
-    bool update( T0 data ) {
+    template<typename U0>
+    bool update( U0 fn ) {
       while( true ) {
         if( is_deleted() ) return false;
-        if( update_weak( data ) ) break;
+        if( update_weak( fn ) ) break;
       }
       return true;
     }
 
     //might fail because of CAS or lock
-    bool update_weak( T0 data ) {
-      return value->update_weak( [&data]( node* node0 ){
+    template<typename U0>
+    bool update_weak( U0 fn ) {
+      return value->update_weak( [&fn]( node* node0 ){
         if( node0->locked ) return false;
-        node0->data = (T0&&) data;
-        return true;
+        return fn( & node0->data );
       });
     }
 
@@ -173,7 +174,7 @@ template< typename T0, unsigned N0 > struct atomic_list {
       if( node0->locked ) return false;
 
       //perform insertion
-      node *node_ = new node{ false, false, (T0&&) value, node0->next };
+      node *node_ = new node{ (T0&&) value, node0->next, false, false };
       node_new.reset( new atomic_node{ node_ } );
       node0->next = node_new;
 
@@ -254,13 +255,13 @@ template< typename T0, unsigned N0 > struct atomic_list {
     return {node_next};
   }
 
-  iterator begin() { 
+  iterator begin() const { 
     return ++iterator{ list };
   }
 
-  iterator end() { return {}; }
+  iterator end() const { return {}; }
 
-  size_t size() {
+  size_t size() const {
     size_t count = 0;
     for( auto it = begin(); it; ++it ) {
       count++;

@@ -53,7 +53,6 @@ int main() {
     atomic_list_t::iterator it = atomic_list0.push_front( counter.fetch_add( 1, std::memory_order_relaxed ) );
   }
 
-  (++atomic_list0.begin()).update( -1 );
 
   printf( "list before test:\n" );
   print_list( atomic_list0 );
