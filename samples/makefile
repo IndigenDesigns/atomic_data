@@ -4,7 +4,7 @@
 all: atomic_data_test.exe atomic_map.exe atomic_vector.exe vector_of_atomic.exe atomic_list.exe
 
 
-OPTS = -U__STRICT_ANSI__ -Wall -std=c++14 -O2 -mtune=pentium4 -msse2 -lpthread
+OPTS = -D_ISOC99_SOURCE -Wall -march=native -std=c++14 -O2 -msse2 -ffast-math -static
 CC = g++
 
 

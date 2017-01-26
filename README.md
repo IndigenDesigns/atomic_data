@@ -1,7 +1,9 @@
 
 ##atomic_data: A Multibyte General Purpose Lock-Free Data Structure
 
-  This repo contains three folders:
+  This repo contains:
+
+  * A header file for the **atomic\_data** implementation. It also contains API guide.
 
   * In [Samples](https://github.com/alexpolt/atomic_data/tree/master/samples) 
     you'll find **atomic\_data** samples (and a **makefile**) such as
