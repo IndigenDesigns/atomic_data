@@ -1,5 +1,5 @@
 
-##atomic_data: A Multibyte General Purpose Lock-Free Data Structure
+## atomic\_data: A Multibyte General Purpose Lock-Free Data Structure
 
   This repo contains:
 
