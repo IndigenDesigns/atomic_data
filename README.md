@@ -15,7 +15,7 @@
     performance comparison.
 
   * [Visual Studio 2015](https://github.com/alexpolt/atomic_data/tree/master/VisualStudio2015/atomic_data_test)
-    project with above samples.
+    project with above samples. On newer version in has a lot "not inlined" warnings. I should fix it.
 
   * [Android Studio](https://github.com/alexpolt/atomic_data/tree/master/AndroidStudio/atomic_data_test) 
     NDK project to test **atomic\_data** on a smartphone.
@@ -23,14 +23,14 @@
   You can download the entire repo as a zip archive or clone it.
 
 
-###A diagram depicting the basics of the algorithm behind **atomic\_data**:
+### A diagram depicting the basics of the algorithm behind **atomic\_data**:
 
   ![diagram](http://alexpolt.github.io/images/atomic-data.png)
 
   Read more in the [blog post](http://alexpolt.github.io/atomic-data.html). 
 
 
-##License
+## License
 
   The code in this repository is Public-domain software.
 
